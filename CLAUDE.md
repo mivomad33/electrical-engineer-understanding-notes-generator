@@ -26,6 +26,7 @@ notes/                         생성된 이해 노트
 .cache/work/                   챕터 작업 메모 (파트 계획·진행 상황, git 제외)
   circuit-theory/
     ch01-plan.md
+.claude/skills/chapter-note/   `/chapter-note {PDF}` — 챕터 노트 작성 진입점 (입력 처리만, 규칙은 이 파일)
 ```
 
 - 과목 폴더 이름은 아래 표를 따른다. 표에 없는 과목이 생기면 표에 먼저 추가한다.
