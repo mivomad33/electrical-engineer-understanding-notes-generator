@@ -1,0 +1,6 @@
+[project]
+name = "exam-sheets"
+version = "0.1.0"
+description = "교재 기출 문제풀이 페이지로 문제지와 정답·해설 PDF를 만든다"
+requires-python = ">=3.12"
+dependencies = ["pymupdf>=1.24"]

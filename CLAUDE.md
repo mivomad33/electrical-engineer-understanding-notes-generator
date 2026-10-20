@@ -39,6 +39,7 @@ notes/                         새로 쓰는 노트
     ch01-scope.md              범위 목록 (교재에서 뽑은 다뤄야 할 항목)
     ch01-plan.md               작업 메모 (페이지 지도·큰 질문·뼈대·기호·파트 계획·나중에 연결할 곳·진행 상황)
 .claude/skills/chapter-note/   `/chapter-note {PDF}` — 노트 작성 절차 (교재 읽기, 4단계 작업 절차, 검증 에이전트)
+tools/exam-sheets/             기출 문제지·정답·해설 PDF 생성기 (노트 작업과 별개, 설계는 PLAN.md, 산출물 output/은 git 제외)
 ```
 
 - 과목 폴더 이름은 아래 표를 따른다. 표에 없는 과목이 생기면 표에 먼저 추가한다.
