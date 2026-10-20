@@ -37,7 +37,7 @@ notes/                         새로 쓰는 노트
 .cache/work/                   챕터 작업 파일 (git 제외)
   circuit-theory/
     ch01-scope.md              범위 목록 (교재에서 뽑은 다뤄야 할 항목)
-    ch01-plan.md               작업 메모 (페이지 지도·큰 질문·뼈대·기호·파트 계획·진행 상황)
+    ch01-plan.md               작업 메모 (페이지 지도·큰 질문·뼈대·기호·파트 계획·나중에 연결할 곳·진행 상황)
 .claude/skills/chapter-note/   `/chapter-note {PDF}` — 노트 작성 절차 (교재 읽기, 4단계 작업 절차, 검증 에이전트)
 ```
 
