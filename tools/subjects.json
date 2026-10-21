@@ -1,3 +1,8 @@
 {
-  "회로이론": "circuit-theory"
+  "회로이론": "circuit-theory",
+  "전기자기학": "electromagnetics",
+  "제어공학": "control-engineering",
+  "전기기기": "electric-machines",
+  "전력공학": "power-engineering",
+  "전기설비기술기준": "electrical-facility-standards"
 }

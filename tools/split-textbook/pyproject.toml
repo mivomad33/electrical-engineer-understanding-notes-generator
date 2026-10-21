@@ -1,0 +1,6 @@
+[project]
+name = "split-textbook"
+version = "0.1.0"
+description = "교재 원본(과목 책)을 챕터별 PDF로 자른다"
+requires-python = ">=3.12"
+dependencies = ["pymupdf>=1.24"]

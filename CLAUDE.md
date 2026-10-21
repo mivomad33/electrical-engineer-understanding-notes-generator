@@ -24,8 +24,9 @@
 ## 폴더 구조
 
 ```
-textbook/                      기존 교재 PDF (수정 금지, git 제외)
-  회로이론/                    과목별 폴더 (교재 원래 이름 그대로)
+textbook_original/             교재 원본 (과목 책 다섯 권, 수정 금지, git 제외)
+textbook/                      원본을 챕터별로 자른 PDF (tools/split-textbook로 만든다, 수정 금지, git 제외)
+  회로이론/                    과목별 폴더 (교재 과목 이름 그대로)
 notes/                         새로 쓰는 노트
   _index.md                    전체 과목 목록과 과목 간 연결
   circuit-theory/              과목 폴더 (영문 kebab-case)
@@ -41,7 +42,8 @@ notes/                         새로 쓰는 노트
 .claude/skills/chapter-note/   `/chapter-note [PDF]` — 노트 작성 절차 (PDF를 생략하면 아직 끝내지 않은 첫 챕터를 골라 확인받는다, 교재 읽기, 4단계 작업 절차, 검증 에이전트)
 tools/exam-sheets/             기출 문제지·정답·해설 PDF 생성기 (노트 작업과 별개, 설계는 PLAN.md, 산출물 output/은 git 제외)
 tools/note-pdf/                챕터 노트 + 기출 문제지(옵션으로 해설) → 필기 여백이 넓은 PDF 한 권 (굿노트용, 문제지가 없으면 exam-sheets를 자동 실행, 사용법은 README.md, 산출물 output/은 git 제외)
-tools/subjects.json            교재 과목 → 과목 폴더 대응 (아래 표와 같게 유지, exam-sheets·note-pdf가 읽는다)
+tools/split-textbook/          교재 원본 → 챕터별 PDF (textbook/), 사용법은 README.md
+tools/subjects.json            교재 과목 → 과목 폴더 대응, 적힌 순서가 공부 순서 (아래 표와 같게 유지, 도구들과 /chapter-note가 읽는다)
 docs/changes/                  변경 건 문서 (아래 참고)
 ```
 
@@ -52,6 +54,11 @@ docs/changes/                  변경 건 문서 (아래 참고)
   | 교재 폴더 (`textbook/`) | 과목 폴더 (`notes/`, `.cache/`) |
   |---|---|
   | 회로이론 | `circuit-theory` |
+  | 전기자기학 | `electromagnetics` |
+  | 제어공학 | `control-engineering` |
+  | 전기기기 | `electric-machines` |
+  | 전력공학 | `power-engineering` |
+  | 전기설비기술기준 | `electrical-facility-standards` |
 
 - 노트 파일명: `ch{두 자리 번호}-{영문 주제 kebab-case}.md` — 과목은 폴더가 구분하므로 파일명에 넣지 않는다. 챕터 번호는 교재 챕터 번호를 따른다 (범위 단위가 교재 챕터이므로).
 - 챕터를 파트 여러 개로 나눠 쓰면(`/chapter-note` 스킬의 "작업 절차" 참고) 파트마다 파일 하나를 만들고, 파일명 끝에 순번을 붙인다: `ch01-electric-basics-1.md`, `ch01-electric-basics-2.md`, …
