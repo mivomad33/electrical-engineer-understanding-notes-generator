@@ -1,0 +1,17 @@
+{
+  "name": "note-pdf",
+  "version": "0.1.0",
+  "private": true,
+  "description": "노트 마크다운을 필기 여백이 넓은 PDF로 만든다 (굿노트용)",
+  "type": "module",
+  "bin": {
+    "note-pdf": "note_pdf.mjs"
+  },
+  "dependencies": {
+    "@vscode/markdown-it-katex": "^1.1.2",
+    "katex": "^0.19.0",
+    "markdown-it": "^15.0.3",
+    "markdown-it-anchor": "^10.0.0",
+    "puppeteer-core": "^25.15.0"
+  }
+}
