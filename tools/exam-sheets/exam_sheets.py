@@ -7,6 +7,7 @@ import argparse
 import json
 import re
 import sys
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -16,26 +17,30 @@ import pymupdf
 SUBJECT_DIRS = json.loads((Path(__file__).parent.parent / "subjects.json").read_text(encoding="utf-8"))
 
 SECTION_TITLE = "기출 문제풀이"
-BOX_FILL = (0.98, 0.941, 0.898)  # 해설 상자 베이지
-BOX_FILL_TOL = 0.01
+BOX_FILL_TOL = 0.01  # 해설 상자 색 비교 허용오차 (RGB 0~1)
 BOX_MIN_WIDTH = 100
+BADGE_GAP = 15  # 해설 상자 아래 끝 ~ 「정답」 배지 위 끝 최대 간격 [pt]
 ANSWER_LABEL = "정답"
 ANSWER_SYMBOLS = "①②③④"
 NUMBER_RE = re.compile(r"^\d{2}$")
 NUMBER_MIN_SIZE = 14  # 문제 번호 글자 크기 하한 [pt]
 COLUMN_TOL = 3  # 문제 번호 x와 해설 상자 x의 허용 차이 [pt]
 MASK_PAD = 1.5
+TABLE_ROWS = 25  # 정답표 한 단에 넣을 최대 행 수. 넘으면 두 단으로 나눈다
 
 
 @dataclass
 class Answer:
     page: int  # 0부터
     symbol: str  # "①" 등, 못 찾으면 ""
+    label: pymupdf.Rect  # 「정답」 글자
     rect: pymupdf.Rect  # 가릴 영역 (배지 + 기호)
+    box: pymupdf.Rect | None = None  # 이 배지가 붙은 해설 상자 (배지 바로 위)
 
 
 @dataclass
 class Problem:
+    section: int  # 1부터
     number: int
     page: int
     answer: Answer | None = None
@@ -47,11 +52,16 @@ class Chapter:
     subject: str
     number: int
     title: str
-    start: int = -1  # 문제 영역 첫 페이지 (0부터)
+    sections: list[list[int]] = field(default_factory=list)  # 기출 문제풀이 단원마다 페이지 (0부터)
+    box_fill: tuple = ()
     boxes: dict[int, list[pymupdf.Rect]] = field(default_factory=dict)
     answers: list[Answer] = field(default_factory=list)
     problems: list[Problem] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+
+    @property
+    def pages(self) -> list[int]:
+        return [p for s in self.sections for p in s]
 
 
 def parse_name(pdf: Path) -> tuple[str, int, str]:
@@ -61,15 +71,46 @@ def parse_name(pdf: Path) -> tuple[str, int, str]:
     return m.group(1), int(m.group(2)), m.group(3)
 
 
-def find_boxes(page: pymupdf.Page) -> list[pymupdf.Rect]:
-    boxes = []
-    for d in page.get_drawings():
-        fill = d.get("fill")
-        if not fill or d["rect"].width < BOX_MIN_WIDTH:
-            continue
-        if all(abs(a - b) <= BOX_FILL_TOL for a, b in zip(fill, BOX_FILL)):
-            boxes.append(pymupdf.Rect(d["rect"]))
-    return boxes
+def has_label(page: pymupdf.Page) -> bool:
+    return any(w[4] == ANSWER_LABEL for w in page.get_text("words"))
+
+
+def find_sections(doc: pymupdf.Document) -> list[list[int]]:
+    # 「기출 문제풀이」 제목 페이지에서 시작해, 「정답」이 있는 페이지가 이어지는 동안이 한 단원이다.
+    # 전기기기처럼 한 장에 문제풀이가 여러 번(이론 → 문제 → 이론 → 문제) 나오는 교재가 있다.
+    sections = []
+    current = None
+    for page in doc:
+        if SECTION_TITLE in page.get_text():
+            current = [page.number]
+            sections.append(current)
+        elif current is not None and has_label(page):
+            current.append(page.number)
+        else:
+            current = None
+    return sections
+
+
+def find_filled(page: pymupdf.Page) -> list[tuple[tuple, pymupdf.Rect]]:
+    return [(tuple(d["fill"]), pymupdf.Rect(d["rect"])) for d in page.get_drawings()
+            if d.get("fill") and d["rect"].width >= BOX_MIN_WIDTH]
+
+
+def same_color(a: tuple, b: tuple) -> bool:
+    return all(abs(x - y) <= BOX_FILL_TOL for x, y in zip(a, b))
+
+
+def box_above(label: pymupdf.Rect, rects: list[pymupdf.Rect]) -> pymupdf.Rect | None:
+    # 「정답」 배지는 해설 상자 바로 아래 오른쪽 끝에 붙는다.
+    near = [r for r in rects
+            if r.x0 <= label.x0 and label.x1 <= r.x1 and 0 <= label.y0 - r.y1 <= BADGE_GAP]
+    return min(near, key=lambda r: label.y0 - r.y1, default=None)
+
+
+def drop_nested(rects: list[pymupdf.Rect]) -> list[pymupdf.Rect]:
+    # 해설 안의 표·강조 영역이 같은 색인 경우가 있다 (전기설비기술기준). 바깥 상자만 남긴다.
+    return [r for i, r in enumerate(rects)
+            if not any(j != i and o.contains(r) and o != r for j, o in enumerate(rects))]
 
 
 def find_answers(page: pymupdf.Page) -> list[Answer]:
@@ -94,7 +135,8 @@ def find_answers(page: pymupdf.Page) -> list[Answer]:
             dr = d["rect"]
             if d.get("fill") and dr.intersects(label) and dr.width < 40 and dr.height < 20:
                 rect |= dr
-        answers.append(Answer(page.number, symbol, rect + (-MASK_PAD, -MASK_PAD, MASK_PAD, MASK_PAD)))
+        answers.append(Answer(page.number, symbol, label,
+                              rect + (-MASK_PAD, -MASK_PAD, MASK_PAD, MASK_PAD)))
     return answers
 
 
@@ -113,9 +155,26 @@ def find_numbers(page: pymupdf.Page, column_xs: list[float]) -> list[tuple[int, 
     return found
 
 
-def reading_key(page_no: int, rect: pymupdf.Rect, page_width: float) -> tuple:
-    column = 0 if rect.x0 < page_width / 2 else 1
+def reading_key(page_no: int, rect: pymupdf.Rect, page_width: float, column_rect: pymupdf.Rect | None = None) -> tuple:
+    # 단은 column_rect(기본은 rect 자신)의 왼쪽 끝으로 정한다. 정답 배지는 상자 오른쪽 끝에 있어서
+    # 1단 편집(전기설비기술기준)에서도 오른쪽 단으로 보이므로, 배지가 붙은 상자를 기준으로 삼는다.
+    column = 0 if (column_rect or rect).x0 < page_width / 2 else 1
     return (page_no, column, rect.y0)
+
+
+def find_box_fill(ch: Chapter, doc: pymupdf.Document) -> tuple:
+    # 해설 상자 색은 교재(과목)마다 다르다. 「정답」 배지 바로 위의 넓은 채움 사각형 색을 세어 가장 많은 것으로 정한다.
+    votes = Counter()
+    for a in ch.answers:
+        filled = find_filled(doc[a.page])
+        owner = box_above(a.label, [r for _, r in filled])
+        if owner is not None:
+            votes[next(tuple(round(c, 3) for c in f) for f, r in filled if r == owner)] += 1
+    if not votes:
+        raise ValueError(f"해설 상자 색을 정하지 못했다 (정답 배지 위에 채움 사각형이 없다): {ch.pdf.name}")
+    if len(votes) > 1:
+        ch.warnings.append(f"정답 배지 위 상자 색이 {len(votes)}가지다: {dict(votes)}")
+    return votes.most_common(1)[0][0]
 
 
 def analyze(pdf: Path) -> tuple[Chapter, pymupdf.Document]:
@@ -123,54 +182,81 @@ def analyze(pdf: Path) -> tuple[Chapter, pymupdf.Document]:
     ch = Chapter(pdf, subject, number, title)
     doc = pymupdf.open(pdf)
 
-    for page in doc:
-        if SECTION_TITLE in page.get_text():
-            ch.start = page.number
-            break
-    if ch.start < 0:
+    ch.sections = find_sections(doc)
+    if not ch.sections:
         raise ValueError(f"「{SECTION_TITLE}」 페이지를 찾지 못했다: {pdf.name}")
 
-    for pno in range(ch.start, doc.page_count):
-        page = doc[pno]
-        ch.boxes[pno] = find_boxes(page)
-        page_answers = find_answers(page)
-        ch.answers += page_answers
-        if len(ch.boxes[pno]) != len(page_answers):  # V1
-            ch.warnings.append(
-                f"PDF p.{pno + 1}: 해설 상자 {len(ch.boxes[pno])}개, 정답 {len(page_answers)}개")
+    for pno in ch.pages:
+        ch.answers += find_answers(doc[pno])
+    ch.box_fill = find_box_fill(ch, doc)
+    for pno in ch.pages:
+        ch.boxes[pno] = drop_nested([r for f, r in find_filled(doc[pno]) if same_color(f, ch.box_fill)])
+    for a in ch.answers:
+        a.box = box_above(a.label, ch.boxes[a.page])
 
     column_xs = sorted({round(b.x0) for bs in ch.boxes.values() for b in bs})
-    events = []
-    for pno in range(ch.start, doc.page_count):
-        width = doc[pno].rect.width
-        for n, r in find_numbers(doc[pno], column_xs):
-            events.append((reading_key(pno, r, width), "number", n))
-        for a in (a for a in ch.answers if a.page == pno):
-            events.append((reading_key(pno, a.rect, width), "answer", a))
-    events.sort(key=lambda e: e[0])
+    for sno, pages in enumerate(ch.sections, 1):
+        events = []
+        for pno in pages:
+            width = doc[pno].rect.width
+            for n, r in find_numbers(doc[pno], column_xs):
+                events.append((reading_key(pno, r, width), "number", n))
+            for b in ch.boxes[pno]:
+                events.append((reading_key(pno, b, width), "box", b))
+            for a in (a for a in ch.answers if a.page == pno):
+                events.append((reading_key(pno, a.rect, width, a.box), "answer", a))
+        events.sort(key=lambda e: e[0])
+        check_order(ch, sno, events)
 
-    # 정답은 읽기 순서상 바로 앞의, 아직 짝이 없는 문제 번호에 붙인다.
-    for key, kind, value in events:
-        if kind == "number":
-            ch.problems.append(Problem(value, key[0]))
-        elif ch.problems and ch.problems[-1].answer is None:
-            ch.problems[-1].answer = value
-        else:
-            ch.warnings.append(f"PDF p.{value.page + 1}: 짝지을 문제 번호가 없는 정답")
-
-    # V2
-    numbers = [p.number for p in ch.problems]
-    if numbers != list(range(1, len(numbers) + 1)):
-        ch.warnings.append(f"문제 번호가 01부터 연속되지 않는다: {numbers}")
+        # V2
+        numbers = [p.number for p in ch.problems if p.section == sno]
+        if numbers != list(range(1, len(numbers) + 1)):
+            ch.warnings.append(f"{section_label(ch, sno)}문제 번호가 01부터 연속되지 않는다: {numbers}")
     for p in ch.problems:
         if p.answer is None or not p.answer.symbol:
-            ch.warnings.append(f"{p.number:02d}번 정답을 찾지 못했다 (PDF p.{p.page + 1})")
+            ch.warnings.append(f"{problem_label(ch, p)}번 정답을 찾지 못했다 (PDF p.{p.page + 1})")
     return ch, doc
+
+
+def check_order(ch: Chapter, sno: int, events: list) -> None:
+    # V1: 읽기 순서로 「문제 번호 → 해설 상자 1개 이상 → 정답」이 반복되어야 한다.
+    # 해설 상자가 여럿인 것은 해설이 다음 단·페이지로 넘어간 경우다 (넘어간 앞부분 상자에는 정답 배지가 없다).
+    # 정답은 이 문제 번호에 붙인다. 그래서 해설이 다음 페이지로 넘어가도 짝이 맞는다.
+    state = "start"
+    for key, kind, value in events:
+        where = f"PDF p.{key[0] + 1}"
+        if kind == "number":
+            if state in ("number", "box"):
+                ch.warnings.append(f"{where}: {problem_label(ch, ch.problems[-1])}번이 정답 없이 끝났다")
+            ch.problems.append(Problem(sno, value, key[0]))
+            state = "number"
+        elif kind == "box":
+            if state not in ("number", "box"):
+                ch.warnings.append(f"{where}: 문제 번호 없이 나온 해설 상자")
+            state = "box"
+        else:
+            if state != "box":
+                ch.warnings.append(f"{where}: 해설 상자 뒤에 오지 않은 정답")
+            elif value.box is None:
+                ch.warnings.append(f"{where}: 바로 위에 해설 상자가 없는 정답")
+            if ch.problems and ch.problems[-1].section == sno and ch.problems[-1].answer is None:
+                ch.problems[-1].answer = value
+            state = "answered"
+    if state in ("number", "box"):
+        ch.warnings.append(f"{problem_label(ch, ch.problems[-1])}번이 정답 없이 끝났다")
+
+
+def section_label(ch: Chapter, sno: int) -> str:
+    return f"({sno}) " if len(ch.sections) > 1 else ""
+
+
+def problem_label(ch: Chapter, p: Problem) -> str:
+    return f"{section_label(ch, p.section)}{p.number:02d}"
 
 
 def build_questions(ch: Chapter, doc: pymupdf.Document, dpi: int) -> pymupdf.Document:
     out = pymupdf.open()
-    for pno in range(ch.start, doc.page_count):
+    for pno in ch.pages:
         page = doc[pno]
         masks = ch.boxes[pno] + [a.rect for a in ch.answers if a.page == pno]
         for r in masks:
@@ -181,6 +267,10 @@ def build_questions(ch: Chapter, doc: pymupdf.Document, dpi: int) -> pymupdf.Doc
     return out
 
 
+def page_ranges(ch: Chapter) -> str:
+    return ", ".join(f"PDF p.{s[0] + 1}~{s[-1] + 1}" for s in ch.sections)
+
+
 def build_answers(ch: Chapter, src: Path) -> pymupdf.Document:
     out = pymupdf.open()
     page = out.new_page(width=556, height=754)
@@ -188,26 +278,40 @@ def build_answers(ch: Chapter, src: Path) -> pymupdf.Document:
         symbol = p.answer.symbol if p.answer and p.answer.symbol else "?"
         pno = p.answer.page if p.answer else p.page
         # 해설 위치: 이 파일의 쪽 (정답표가 1쪽) / 교재 원본 PDF 페이지
-        return (f"<tr><td>{p.number:02d}</td><td>{symbol}</td>"
-                f"<td>{pno - ch.start + 2}쪽 (교재 PDF p.{pno + 1})</td></tr>")
+        return (f"<tr><td>{problem_label(ch, p)}</td><td>{symbol}</td>"
+                f"<td>{ch.pages.index(pno) + 2}쪽 (교재 PDF p.{pno + 1})</td></tr>")
 
-    rows = "".join(row(p) for p in ch.problems)
-    html = f"""
+    head = f"""
     <h2>{ch.subject} 제{ch.number}장 {ch.title} — 정답</h2>
-    <p>해설은 2쪽부터 (교재 원본 PDF p.{ch.start + 1}~)</p>
-    <table><tr><th>번호</th><th>정답</th><th>해설 위치</th></tr>{rows}</table>
+    <p>해설은 2쪽부터 (교재 원본 {page_ranges(ch)})</p>
     """
-    css = """
-    * { font-family: sans-serif; }
-    h2 { font-size: 16pt; }
-    p { font-size: 10pt; color: #555; }
-    table { border-collapse: collapse; }
-    th, td { border: 1px solid #999; padding: 3pt 14pt; font-size: 12pt; text-align: center; white-space: nowrap; }
-    th { background: #eee; }
+    # 문제가 많으면(전기기기 한 장 40문제) 한 단에 다 들어가지 않으므로 두 단으로 나눈다.
+    columns = 1 if len(ch.problems) <= TABLE_ROWS else 2
+    per = -(-len(ch.problems) // columns)
+    tables = ["<table><tr><th>번호</th><th>정답</th><th>해설 위치</th></tr>"
+              + "".join(row(p) for p in ch.problems[i:i + per]) + "</table>"
+              for i in range(0, len(ch.problems), per)]
+    pad = "14pt" if columns == 1 else "6pt"
+    css = f"""
+    * {{ font-family: sans-serif; }}
+    h2 {{ font-size: 16pt; }}
+    p {{ font-size: 10pt; color: #555; }}
+    table {{ border-collapse: collapse; }}
+    th, td {{ border: 1px solid #999; padding: 3pt {pad}; font-size: 12pt; text-align: center; white-space: nowrap; }}
+    th {{ background: #eee; }}
     """
-    page.insert_htmlbox(page.rect + (50, 50, -50, -50), html, css=css)
+    area = page.rect + (50, 50, -50, -50)
+    if columns == 1:
+        page.insert_htmlbox(area, head + tables[0], css=css)
+    else:
+        page.insert_htmlbox(pymupdf.Rect(area.x0, area.y0, area.x1, area.y0 + 70), head, css=css)
+        half = area.width / 2
+        for i, t in enumerate(tables):
+            x0 = area.x0 + i * half
+            page.insert_htmlbox(pymupdf.Rect(x0, area.y0 + 70, x0 + half - 6, area.y1), t, css=css)
     with pymupdf.open(src) as original:
-        out.insert_pdf(original, from_page=ch.start, to_page=original.page_count - 1)
+        for s in ch.sections:
+            out.insert_pdf(original, from_page=s[0], to_page=s[-1])
     return out
 
 
@@ -231,7 +335,7 @@ def process(pdf: Path, out_root: Path, dpi: int) -> bool:
 
     masked = sum(len(b) for b in ch.boxes.values())
     print(f"ch{ch.number:02d} {ch.title}: 문제 {len(ch.problems)}개, "
-          f"페이지 PDF p.{ch.start + 1}~, 가린 해설 상자 {masked}개 → {q_path.name}, {a_path.name}")
+          f"페이지 {page_ranges(ch)}, 가린 해설 상자 {masked}개 → {q_path.name}, {a_path.name}")
     for w in ch.warnings:
         print(f"  경고: {w}")
     return not ch.warnings
