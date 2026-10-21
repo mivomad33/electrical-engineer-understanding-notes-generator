@@ -4,6 +4,7 @@
 """
 
 import argparse
+import json
 import re
 import sys
 from dataclasses import dataclass, field
@@ -11,8 +12,8 @@ from pathlib import Path
 
 import pymupdf
 
-# 프로젝트 CLAUDE.md의 과목 폴더 표와 맞춘다.
-SUBJECT_DIRS = {"회로이론": "circuit-theory"}
+# 교재 과목 → 과목 폴더. note-pdf와 함께 쓰는 tools/subjects.json에 있다 (프로젝트 CLAUDE.md의 과목 폴더 표와 맞춘다).
+SUBJECT_DIRS = json.loads((Path(__file__).parent.parent / "subjects.json").read_text(encoding="utf-8"))
 
 SECTION_TITLE = "기출 문제풀이"
 BOX_FILL = (0.98, 0.941, 0.898)  # 해설 상자 베이지
