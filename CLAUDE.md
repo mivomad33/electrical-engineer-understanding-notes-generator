@@ -38,7 +38,7 @@ notes/                         새로 쓰는 노트
   circuit-theory/
     ch01-scope.md              범위 목록 (교재에서 뽑은 다뤄야 할 항목)
     ch01-plan.md               작업 메모 (페이지 지도·큰 질문·뼈대·기호·파트 계획·나중에 연결할 곳·진행 상황)
-.claude/skills/chapter-note/   `/chapter-note {PDF}` — 노트 작성 절차 (교재 읽기, 4단계 작업 절차, 검증 에이전트)
+.claude/skills/chapter-note/   `/chapter-note [PDF]` — 노트 작성 절차 (PDF를 생략하면 아직 끝내지 않은 첫 챕터를 골라 확인받는다, 교재 읽기, 4단계 작업 절차, 검증 에이전트)
 tools/exam-sheets/             기출 문제지·정답·해설 PDF 생성기 (노트 작업과 별개, 설계는 PLAN.md, 산출물 output/은 git 제외)
 tools/note-pdf/                챕터 노트 + 기출 문제지(옵션으로 해설) → 필기 여백이 넓은 PDF 한 권 (굿노트용, 문제지가 없으면 exam-sheets를 자동 실행, 사용법은 README.md, 산출물 output/은 git 제외)
 tools/subjects.json            교재 과목 → 과목 폴더 대응 (아래 표와 같게 유지, exam-sheets·note-pdf가 읽는다)
@@ -178,9 +178,10 @@ tools/subjects.json            교재 과목 → 과목 폴더 대응 (아래 �
 
 ## 노트 작성
 
-챕터 노트는 `/chapter-note {교재 챕터 PDF}` 스킬로 쓴다. 교재 읽는 방법, 4단계 작업 절차, 검증 에이전트는 모두 그 스킬(`.claude/skills/chapter-note/SKILL.md`)에 있다.
+챕터 노트는 `/chapter-note {교재 챕터 PDF}` 스킬로 쓴다. PDF를 생략하면 `textbook/`에서 아직 노트를 끝내지 않은 첫 챕터를 골라 확인받고 진행한다. 교재 읽는 방법, 4단계 작업 절차, 검증 에이전트는 모두 그 스킬(`.claude/skills/chapter-note/SKILL.md`)에 있다.
 이 파일은 노트가 **어떤 모습이어야 하는지**만 정하고, 노트를 **어떻게 만드는지**는 스킬이 정한다.
 
 ## 학습자가 질문할 때
 
 노트를 읽다가 질문하면 답한 뒤, 그 내용이 노트에 없던 것이라면 본문의 알맞은 자리에 녹여 넣을지 묻는다.
+노트를 고쳤으면 그 챕터의 필기용 PDF도 `node tools/note-pdf/note_pdf.mjs <고친 노트 파일>`로 다시 만든다.
