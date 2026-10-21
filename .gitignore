@@ -1,5 +1,6 @@
 # 교재 PDF 원본 — 저작물이므로 절대 커밋하지 않는다
 textbook/
+textbook_original/
 *.pdf
 
 # PDF 페이지 렌더링 이미지 (작업용 캐시)

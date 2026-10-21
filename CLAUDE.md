@@ -42,7 +42,10 @@ notes/                         새로 쓰는 노트
 tools/exam-sheets/             기출 문제지·정답·해설 PDF 생성기 (노트 작업과 별개, 설계는 PLAN.md, 산출물 output/은 git 제외)
 tools/note-pdf/                챕터 노트 + 기출 문제지(옵션으로 해설) → 필기 여백이 넓은 PDF 한 권 (굿노트용, 문제지가 없으면 exam-sheets를 자동 실행, 사용법은 README.md, 산출물 output/은 git 제외)
 tools/subjects.json            교재 과목 → 과목 폴더 대응 (아래 표와 같게 유지, exam-sheets·note-pdf가 읽는다)
+docs/changes/                  변경 건 문서 (아래 참고)
 ```
+
+- 여러 단계에 걸치거나 분석·결정이 필요한 변경은 `docs/changes/{YYYY-MM-DD}-{영문 kebab-case 이름}.md`에 문서로 남긴다: 배경, 분석 결과, 결정과 이유, 작업 내용, 검증, 진행 상황. 대화가 끊겨도 어디까지 정했고 무엇이 남았는지 알 수 있게 하고, 나중에 같은 일을 다시 할 때(예: 교재 개정판) 분석을 반복하지 않기 위함이다. 작업 중 결정이 바뀌면 문서도 고친다.
 
 - 과목 폴더 이름은 아래 표를 따른다. 표에 없는 과목이 생기면 표에 먼저 추가하고, `tools/subjects.json`에도 같은 대응을 추가한다.
 
