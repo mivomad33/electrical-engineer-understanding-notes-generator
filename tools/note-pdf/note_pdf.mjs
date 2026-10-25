@@ -105,6 +105,31 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
   return defaultLink(tokens, idx, options, env, self);
 };
 
+// 노트의 그림(교재 그림, tools/textbook-figures)은 노트 파일 기준 상대 경로라, HTML이 임시 폴더에 있어도 찾도록 절대 경로로 바꾼다.
+// 크기는 PNG에 적힌 DPI로 교재에 인쇄된 크기를 되살린다 (본문 폭보다 크면 CSS가 줄인다).
+md.renderer.rules.image = (tokens, idx, options, env, self) => {
+  const token = tokens[idx];
+  const src = token.attrGet("src");
+  if (src && !/^[a-z]+:/i.test(src)) {
+    const file = resolve(env.dir, decodeURI(src));
+    token.attrSet("src", pathToFileURL(file).href);
+    const size = pngSize(file);
+    if (size) token.attrSet("style", `width: ${size.width.toFixed(1)}pt`);
+  }
+  return self.renderToken(tokens, idx, options);
+};
+
+// PNG 폭을 pt로: IHDR의 픽셀 폭과 pHYs의 해상도(없으면 300 DPI, textbook-figures 기본값)
+function pngSize(file) {
+  if (!existsSync(file) || extname(file).toLowerCase() !== ".png") return null;
+  const buf = readFileSync(file);
+  const px = buf.readUInt32BE(16);
+  let dpi = 300;
+  const at = buf.indexOf("pHYs");
+  if (at > 0 && buf[at + 12] === 1) dpi = buf.readUInt32BE(at + 4) * 0.0254;
+  return { width: (px * 72) / dpi };
+}
+
 // "ch03-rlc-ac-circuit-2" → "ch03-rlc-ac-circuit" (파트 순번을 뗀 챕터 이름)
 const chapterName = (name) => name.replace(/-\d+$/, "");
 const chapterNumber = (name) => name.match(/^ch(\d+)/)?.[1];
@@ -140,6 +165,8 @@ pre { background: #f6f6f6; padding: .6em; overflow: hidden; white-space: pre-wra
 pre code { background: none; padding: 0; }
 hr { border: 0; border-top: 1px solid #ddd; margin: 1.5em 0; }
 .katex-display { margin: .7em 0; overflow: hidden; break-inside: avoid; }
+img { display: block; max-width: 100%; height: auto; margin: .3em auto; }
+p:has(> img) { text-align: center; font-size: 8.5pt; color: #555; break-inside: avoid; }
 .katex { font-size: 1.08em; }
 details { margin: .4em 0; }
 summary { font-weight: 600; }
@@ -150,7 +177,10 @@ summary { font-weight: 600; }
 function toHtml(title, partPaths) {
   const env = { parts: new Set(partPaths.map((p) => basename(p, ".md"))) };
   let body = partPaths
-    .map((p) => `<section class="part" id="part-${basename(p, ".md")}">${md.render(readFileSync(p, "utf8"), env)}</section>`)
+    .map((p) => {
+      env.dir = dirname(p);
+      return `<section class="part" id="part-${basename(p, ".md")}">${md.render(readFileSync(p, "utf8"), env)}</section>`;
+    })
     .join("\n");
   if (!opt["hide-answers"]) body = body.replace(/<details(?![^>]*\bopen\b)/g, "<details open");
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8">

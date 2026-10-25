@@ -43,6 +43,7 @@ node tools/note-pdf/note_pdf.mjs notes/circuit-theory/ch03-rlc-ac-circuit-1.md  
 
 - 책갈피(목차)에 노트의 파트·마디와 「기출 문제」(`--with-answers`면 「기출 정답·해설」도)가 들어간다. 굿노트의 목차에서 바로 이동할 수 있다.
 - 노트 안 링크(`#마디`, 같은 챕터의 다른 파트)는 PDF 안에서 동작한다. 다른 챕터로 가는 링크는 그 챕터 PDF 파일을 가리킨다.
+- 노트에 넣은 교재 그림(`![…](figures/chNN/….png)`, [textbook-figures](../textbook-figures/README.md)가 만든다)은 교재에 인쇄된 크기 그대로 들어간다 (PNG에 적힌 DPI로 크기를 되살리고, 본문 폭보다 크면 줄인다). 그림 바로 아래 줄(캡션)은 그림과 함께 가운데 정렬된다.
 - `--with-answers`로 붙인 정답표의 "해설 위치 N쪽"은 해설 PDF 안의 쪽수라서, 묶은 PDF의 쪽 번호와는 다르다. 정답표 바로 다음 쪽부터 해설이다.
 - 문제지·해설에는 교재 워터마크가 남아 있으므로 결과 PDF는 개인 학습용으로만 쓰고 공유하지 않는다.
 - 크롬을 못 찾으면 `CHROME_PATH` 환경변수로 실행 파일 경로를 준다.
