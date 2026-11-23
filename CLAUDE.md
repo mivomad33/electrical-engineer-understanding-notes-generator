@@ -44,7 +44,7 @@ notes/                         새로 쓰는 노트
 .claude/skills/chapter-note/   `/chapter-note [PDF]` — 노트 작성 절차 (PDF를 생략하면 아직 끝내지 않은 첫 챕터를 골라 확인받는다, 교재 읽기, 4단계 작업 절차, 검증 에이전트)
 tools/exam-sheets/             기출 문제지·정답·해설 PDF 생성기 (노트 작업과 별개, 설계는 PLAN.md, 산출물 output/은 git 제외)
 tools/note-pdf/                챕터 노트 + 기출 문제지(옵션으로 해설) → 필기 여백이 넓은 PDF 한 권 (굿노트용, 문제지가 없으면 exam-sheets를 자동 실행, 사용법은 README.md, 산출물 output/은 git 제외)
-tools/split-textbook/          교재 원본 → 챕터별 PDF (textbook/), 사용법은 README.md
+tools/split-textbook/          구매 교재 → 워터마크 제거(textbook_original/) → 챕터별 PDF (textbook/), 사용법은 README.md
 tools/textbook-figures/        교재 챕터 PDF → 노트에 넣을 그림 PNG와 필수 그림 목록, 노트의 그림 누락 점검 (사용법·판정 규칙은 README.md, 손으로 고칠 것은 manual.json)
 tools/subjects.json            교재 과목 → 과목 폴더 대응, 적힌 순서가 공부 순서 (아래 표와 같게 유지, 도구들과 /chapter-note가 읽는다)
 docs/changes/                  변경 건 문서 (아래 참고)

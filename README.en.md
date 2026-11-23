@@ -107,8 +107,9 @@ The notes are Markdown with KaTeX math. Open them in the VS Code Markdown previe
 ### Install and first chapter
 
 ```bash
-# 1. Put the original textbook PDFs in textbook_original/ and split them into chapters (review the plan table, then --apply)
+# 1. Strip the buyer watermark from your purchased textbook PDFs into textbook_original/, then split them into chapters (review the plan table, then --apply)
 cd tools/split-textbook
+uv run clean_textbook.py <purchased textbook PDFs>
 uv run split_textbook.py
 uv run split_textbook.py --apply
 
@@ -128,7 +129,7 @@ With no PDF, it proposes the first unfinished chapter and asks for confirmation.
 
 | Tool | What it does | Docs (Korean) |
 |---|---|---|
-| `split-textbook` | Original textbook (subject books) → chapter PDFs | [README](tools/split-textbook/README.md) |
+| `split-textbook` | Purchased textbook → watermark removal → chapter PDFs | [README](tools/split-textbook/README.md) |
 | `textbook-figures` | Chapter PDF → figure PNGs, required-figure list, missing-figure check for notes | [README](tools/textbook-figures/README.md) |
 | `exam-sheets` | Past-exam section → question sheet PDF, answer PDF | [README](tools/exam-sheets/README.md) |
 | `note-pdf` | Notes + question sheet → chapter PDF with a wide writing margin | [README](tools/note-pdf/README.md) |
@@ -145,7 +146,7 @@ With no PDF, it proposes the first unfinished chapter and asks for confirmation.
 ├── notes/                          # generated notes (one folder per subject, subject index _index.md)
 ├── tools/
 │   ├── subjects.json               # textbook subject → subject folder, study order
-│   ├── split-textbook/             # original textbook → chapter PDFs
+│   ├── split-textbook/             # purchased textbook → watermark removal → chapter PDFs
 │   ├── textbook-figures/           # textbook figure extraction, manual.json
 │   ├── exam-sheets/                # past-exam question and answer PDFs
 │   └── note-pdf/                   # chapter PDF for handwriting

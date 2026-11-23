@@ -107,8 +107,9 @@ flowchart TD
 ### 설치와 첫 챕터
 
 ```bash
-# 1. 교재 원본 PDF를 textbook_original/에 넣고 챕터별로 자릅니다 (계획 표를 본 뒤 --apply)
+# 1. 구매한 교재 PDF에서 구매자 워터마크를 지워 textbook_original/에 넣고, 챕터별로 자릅니다 (계획 표를 본 뒤 --apply)
 cd tools/split-textbook
+uv run clean_textbook.py <구매한 교재 PDF들>
 uv run split_textbook.py
 uv run split_textbook.py --apply
 
@@ -128,7 +129,7 @@ PDF를 생략하면 아직 끝내지 않은 첫 챕터를 골라 확인받습니
 
 | 도구 | 하는 일 | 문서 |
 |---|---|---|
-| `split-textbook` | 교재 원본(과목 책) → 챕터별 PDF | [README](tools/split-textbook/README.md) |
+| `split-textbook` | 구매 교재 → 워터마크 제거 → 챕터별 PDF | [README](tools/split-textbook/README.md) |
 | `textbook-figures` | 챕터 PDF → 그림 PNG, 필수 그림 목록, 노트의 그림 누락 점검 | [README](tools/textbook-figures/README.md) |
 | `exam-sheets` | 기출 문제풀이 → 문제지 PDF, 정답·해설 PDF | [README](tools/exam-sheets/README.md) |
 | `note-pdf` | 노트 + 기출 문제지 → 필기 여백이 넓은 챕터 PDF | [README](tools/note-pdf/README.md) |
@@ -145,7 +146,7 @@ PDF를 생략하면 아직 끝내지 않은 첫 챕터를 골라 확인받습니
 ├── notes/                          # 생성된 노트 (과목별 폴더, 과목 목차 _index.md)
 ├── tools/
 │   ├── subjects.json               # 교재 과목 → 과목 폴더, 공부 순서
-│   ├── split-textbook/             # 교재 원본 → 챕터별 PDF
+│   ├── split-textbook/             # 구매 교재 → 워터마크 제거 → 챕터별 PDF
 │   ├── textbook-figures/           # 교재 그림 추출, manual.json
 │   ├── exam-sheets/                # 기출 문제지·해설 PDF
 │   └── note-pdf/                   # 필기용 챕터 PDF
